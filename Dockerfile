@@ -38,6 +38,7 @@ RUN echo "[1/5] Downloading part-aa..." && \
             && break || sleep 10; \
     done && \
     test -f swiftedit_weights.tar.gz.part-aa && \
+    ls -lh swiftedit_weights.tar.gz.part-aa && \
     echo "✓ Downloaded part-aa"
 
 # Part ab
@@ -49,6 +50,7 @@ RUN echo "[2/5] Downloading part-ab..." && \
             && break || sleep 10; \
     done && \
     test -f swiftedit_weights.tar.gz.part-ab && \
+    ls -lh swiftedit_weights.tar.gz.part-ab && \
     echo "✓ Downloaded part-ab"
 
 # Part ac
@@ -60,6 +62,7 @@ RUN echo "[3/5] Downloading part-ac..." && \
             && break || sleep 10; \
     done && \
     test -f swiftedit_weights.tar.gz.part-ac && \
+    ls -lh swiftedit_weights.tar.gz.part-ac && \
     echo "✓ Downloaded part-ac"
 
 # Part ad
@@ -71,6 +74,7 @@ RUN echo "[4/5] Downloading part-ad..." && \
             && break || sleep 10; \
     done && \
     test -f swiftedit_weights.tar.gz.part-ad && \
+    ls -lh swiftedit_weights.tar.gz.part-ad && \
     echo "✓ Downloaded part-ad"
 
 # Part ae
@@ -82,17 +86,30 @@ RUN echo "[5/5] Downloading part-ae..." && \
             && break || sleep 10; \
     done && \
     test -f swiftedit_weights.tar.gz.part-ae && \
+    ls -lh swiftedit_weights.tar.gz.part-ae && \
     echo "✓ Downloaded part-ae"
 
-# Combine and extract
-RUN echo "Combining parts..." && \
+# Combine, verify, and extract
+RUN echo "Checking disk space..." && \
+    df -h && \
+    echo "All parts:" && \
+    ls -lh swiftedit_weights.tar.gz.part-* && \
+    echo "Combining parts..." && \
     cat swiftedit_weights.tar.gz.part-* > swiftedit_weights.tar.gz && \
-    echo "Extracting weights..." && \
+    echo "Combined file:" && \
+    ls -lh swiftedit_weights.tar.gz && \
+    echo "Disk space after combine:" && \
+    df -h && \
+    echo "Extracting weights (this takes 2-3 minutes)..." && \
     tar zxf swiftedit_weights.tar.gz && \
+    echo "Disk space after extract:" && \
+    df -h && \
     echo "Cleaning up..." && \
     rm -f swiftedit_weights.tar.gz.part-* swiftedit_weights.tar.gz && \
     echo "✓ Model weights ready!" && \
-    ls -lh swiftedit_weights/
+    ls -lh swiftedit_weights/ && \
+    echo "Final disk usage:" && \
+    df -h
 
 # Copy handler
 WORKDIR /app
