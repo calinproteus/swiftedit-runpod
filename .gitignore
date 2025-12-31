@@ -1,0 +1,22 @@
+# Model weights (too large for Git, downloaded during Docker build)
+swiftedit_weights.tar.gz*
+*.part-*
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+

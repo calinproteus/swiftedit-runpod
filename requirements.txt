@@ -1,0 +1,22 @@
+# SwiftEdit dependencies
+transformers==4.37.2
+accelerate
+ftfy
+diffusers==0.22.0
+huggingface-hub==0.25.2
+einops
+safetensors
+numpy==1.26.4
+
+# RunPod serverless
+runpod
+
+# Image processing
+Pillow
+
+# API utilities
+requests
+
+
+
+
