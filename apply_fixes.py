@@ -1,6 +1,6 @@
 """
 Apply all model fixes from working pod setup
-Exact replica of the inline fixes from RUNPOD_DEPLOY.md
+Exact replica of the inline fixes from RUNPOD_DEPLOY.md + import path fix
 """
 import re
 
@@ -40,7 +40,13 @@ content = re.sub(
     content
 )
 
+# Fix 5: Fix import paths (ip_adapter directory structure)
+print("[Fix 5] Fixing import paths...")
+content = content.replace('from src.ip_adapter.attention_processor', 'from src.attention_processor')
+content = content.replace('from src.ip_adapter.mask_attention_processor', 'from src.mask_attention_processor')
+
+# Write all changes
 with open(models_path, 'w') as f:
     f.write(content)
 
-print('[SwiftEdit] ✅ All 4 fixes applied successfully!')
+print('[SwiftEdit] ✅ All 5 fixes applied successfully!')
