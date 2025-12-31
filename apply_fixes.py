@@ -32,12 +32,22 @@ content = re.sub(
     content
 )
 
-# Fix 4: SD 2 base model
+# Fix 4: SD 2 base model (catch ALL variations)
 print("[Fix 4] Applying SD 2 base model...")
-content = re.sub(
-    r"'stabilityai/stable-diffusion-2-inpainting'",
-    "'stabilityai/stable-diffusion-2-base'",
-    content
+# Replace 2-inpainting
+content = content.replace(
+    'stabilityai/stable-diffusion-2-inpainting',
+    'stabilityai/stable-diffusion-2-base'
+)
+# Replace 2-1-base (if it exists)
+content = content.replace(
+    'stabilityai/stable-diffusion-2-1-base',
+    'stabilityai/stable-diffusion-2-base'
+)
+# Replace 2-1 (if it exists)
+content = content.replace(
+    'stabilityai/stable-diffusion-2-1',
+    'stabilityai/stable-diffusion-2-base'
 )
 
 # Fix 5: Fix import paths (ip_adapter directory structure)
