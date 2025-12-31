@@ -98,7 +98,7 @@ RUN echo "Freeing disk space..." && \
 
 # Extract weights (now we have enough space)
 RUN echo "Extracting weights..." && \
-    tar zxf swiftedit_weights.tar.gz && \
+    tar zxf swiftedit_weights.tar.gz --no-same-owner && \
     echo "✓ Extracted successfully" && \
     ls -lh swiftedit_weights/
 
