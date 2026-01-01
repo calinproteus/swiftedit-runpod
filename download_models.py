@@ -46,16 +46,16 @@ except Exception as e:
     sys.exit(1)
 
 try:
-    print("\n[3/4] Downloading SD 2 base model...")
+    print("\n[3/4] Downloading SD 2 model...")
     print("  - text_encoder...")
-    CLIPTextModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='text_encoder')
+    CLIPTextModel.from_pretrained('stabilityai/stable-diffusion-2', subfolder='text_encoder')
     print("  - tokenizer...")
-    AutoTokenizer.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='tokenizer')
+    AutoTokenizer.from_pretrained('stabilityai/stable-diffusion-2', subfolder='tokenizer')
     print("  - unet...")
-    UNet2DConditionModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='unet')
+    UNet2DConditionModel.from_pretrained('stabilityai/stable-diffusion-2', subfolder='unet')
     print("  - vae...")
-    AutoencoderKL.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='vae')
-    print("✓ SD 2 base downloaded successfully")
+    AutoencoderKL.from_pretrained('stabilityai/stable-diffusion-2', subfolder='vae')
+    print("✓ SD 2 downloaded successfully")
 except Exception as e:
     print(f"\n✗ SD 2 BASE DOWNLOAD FAILED: {str(e)}")
     import traceback
