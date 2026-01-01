@@ -107,23 +107,8 @@ RUN rm -f swiftedit_weights.tar.gz && \
     echo "✓ Model weights ready!"
 
 # Pre-download ALL HuggingFace models (no runtime downloads!)
-RUN python3 -c "\
-import torch; \
-from transformers import CLIPVisionModelWithProjection, CLIPTextModel, AutoTokenizer; \
-from diffusers import AutoencoderKL, UNet2DConditionModel; \
-print('[1/4] Downloading CLIP...'); \
-CLIPVisionModelWithProjection.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K'); \
-CLIPTextModel.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K'); \
-AutoTokenizer.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K'); \
-print('[2/4] Downloading VAE...'); \
-AutoencoderKL.from_pretrained('madebyollin/sdxl-vae-fp16-fix'); \
-print('[3/4] Downloading SD 2 base...'); \
-CLIPTextModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='text_encoder'); \
-AutoTokenizer.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='tokenizer'); \
-UNet2DConditionModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='unet'); \
-AutoencoderKL.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='vae'); \
-print('✓ All HuggingFace models pre-downloaded!'); \
-"
+COPY download_models.py /app/
+RUN python3 /app/download_models.py
 
 # Copy handler
 WORKDIR /app
