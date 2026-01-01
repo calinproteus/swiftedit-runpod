@@ -46,8 +46,8 @@ RUN echo "[1/6] Downloading SwiftEdit weights..." && \
     echo "✓ SwiftEdit weights ready!"
 
 # Pre-cache ALL models (no runtime downloads!)
-COPY precache_models.py /app/
-RUN python3 /app/precache_models.py
+COPY precache_models_correct.py /app/
+RUN python3 /app/precache_models_correct.py
 
 # Copy handler
 WORKDIR /app
