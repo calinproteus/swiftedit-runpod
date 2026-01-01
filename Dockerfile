@@ -14,6 +14,10 @@ WORKDIR /app/SwiftEdit
 RUN pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir numpy==1.26.4 runpod
 
+# Fix import paths in SwiftEdit code
+COPY fix_imports.py /app/
+RUN python3 /app/fix_imports.py
+
 # Download SwiftEdit weights (ONLY thing needed per README)
 RUN echo "[1/6] Downloading SwiftEdit weights..." && \
     curl -L -f --retry 5 --retry-delay 5 --retry-max-time 600 \
