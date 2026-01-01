@@ -107,31 +107,23 @@ RUN rm -f swiftedit_weights.tar.gz && \
     echo "✓ Model weights ready!"
 
 # Pre-download ALL HuggingFace models (no runtime downloads!)
-RUN echo "Pre-downloading HuggingFace models..." && \
-    python3 << 'PYTHON_DOWNLOAD'
-import torch
-from transformers import CLIPVisionModelWithProjection, CLIPTextModel, AutoTokenizer
-from diffusers import AutoencoderKL, UNet2DConditionModel, DDIMScheduler
-
-print("[1/4] Downloading CLIP (text/image encoder)...")
-CLIPVisionModelWithProjection.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K')
-CLIPTextModel.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K')
-AutoTokenizer.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K')
-
-print("[2/4] Downloading VAE...")
-AutoencoderKL.from_pretrained('madebyollin/sdxl-vae-fp16-fix')
-
-print("[3/4] Downloading SD 2 base model...")
-CLIPTextModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='text_encoder')
-AutoTokenizer.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='tokenizer')
-UNet2DConditionModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='unet')
-AutoencoderKL.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='vae')
-
-print("[4/4] Creating manual scheduler (no download needed)...")
-# Scheduler is created manually in code, no download needed
-
-print("✓ All HuggingFace models pre-downloaded and cached!")
-PYTHON_DOWNLOAD
+RUN python3 -c "\
+import torch; \
+from transformers import CLIPVisionModelWithProjection, CLIPTextModel, AutoTokenizer; \
+from diffusers import AutoencoderKL, UNet2DConditionModel; \
+print('[1/4] Downloading CLIP...'); \
+CLIPVisionModelWithProjection.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K'); \
+CLIPTextModel.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K'); \
+AutoTokenizer.from_pretrained('laion/CLIP-ViT-H-14-laion2B-s32B-b79K'); \
+print('[2/4] Downloading VAE...'); \
+AutoencoderKL.from_pretrained('madebyollin/sdxl-vae-fp16-fix'); \
+print('[3/4] Downloading SD 2 base...'); \
+CLIPTextModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='text_encoder'); \
+AutoTokenizer.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='tokenizer'); \
+UNet2DConditionModel.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='unet'); \
+AutoencoderKL.from_pretrained('stabilityai/stable-diffusion-2-base', subfolder='vae'); \
+print('✓ All HuggingFace models pre-downloaded!'); \
+"
 
 # Copy handler
 WORKDIR /app
