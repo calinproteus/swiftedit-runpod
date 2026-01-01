@@ -41,6 +41,10 @@ RUN echo "[1/6] Downloading SwiftEdit weights..." && \
     rm -f swiftedit_weights.tar.gz.part-* swiftedit_weights.tar.gz && \
     echo "✓ SwiftEdit weights ready!"
 
+# Pre-cache ALL models (no runtime downloads!)
+COPY precache_models.py /app/
+RUN python3 /app/precache_models.py
+
 # Copy handler
 WORKDIR /app
 COPY handler.py /app/
