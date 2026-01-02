@@ -238,10 +238,24 @@ def edit_image(
     # Convert tensor to PIL
     # res_gen_img is a tensor, convert to PIL
     if isinstance(res_gen_img, torch.Tensor):
+        print(f"[SwiftEdit] Generated tensor shape: {res_gen_img.shape}, dtype: {res_gen_img.dtype}, device: {res_gen_img.device}")
+        
+        # Handle both 3D [C, H, W] and 4D [B, C, H, W] tensors
+        if res_gen_img.dim() == 4:
+            print(f"[SwiftEdit] Tensor is 4D, taking first batch item")
+            res_gen_img = res_gen_img[0]  # Take first batch item
+        elif res_gen_img.dim() == 3:
+            print(f"[SwiftEdit] Tensor is already 3D")
+        else:
+            raise ValueError(f"Unexpected tensor dimension: {res_gen_img.dim()}")
+        
         # Normalize from [-1, 1] to [0, 1]
-        res_gen_img = (res_gen_img.squeeze(0).cpu().clamp(-1, 1) + 1) / 2
-        # Convert to PIL
+        res_gen_img = (res_gen_img.cpu().clamp(-1, 1) + 1) / 2
+        print(f"[SwiftEdit] Normalized tensor shape: {res_gen_img.shape}")
+        
+        # Convert to PIL [H, W, C]
         res_gen_img = res_gen_img.permute(1, 2, 0).numpy()
+        print(f"[SwiftEdit] NumPy array shape: {res_gen_img.shape}")
         res_gen_img = (res_gen_img * 255).astype('uint8')
         res_gen_img = Image.fromarray(res_gen_img)
     
