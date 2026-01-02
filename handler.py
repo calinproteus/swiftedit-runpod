@@ -156,9 +156,19 @@ def edit_image(
     from torchvision.transforms.functional import to_tensor
     from torchvision.utils import save_image
     
-    # Resize to 512x512 (model requirement)
-    # Note: Image is already RGB (composited client-side), no conversion needed
-    pil_img_cond = pil_image.resize((512, 512))
+    # Image is already processed client-side:
+    # - Composited onto Figma background (RGB, no alpha)
+    # - Exported at 512x512
+    # - Saved as JPEG (quality 95)
+    # Just use it directly!
+    print(f"[SwiftEdit] Received image: {pil_image.size[0]}x{pil_image.size[1]}, mode: {pil_image.mode}")
+    
+    # Verify size (should be 512x512 from client)
+    if pil_image.size != (512, 512):
+        print(f"[SwiftEdit] WARNING: Image is not 512x512, resizing from {pil_image.size}")
+        pil_img_cond = pil_image.resize((512, 512))
+    else:
+        pil_img_cond = pil_image
     
     mid_timestep = torch.ones((1,), dtype=torch.int64, device="cuda") * 500
     
