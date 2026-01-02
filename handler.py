@@ -106,11 +106,19 @@ def load_models():
 def decode_image(image_data: str) -> Image.Image:
     """Decode base64 image to PIL Image."""
     # Handle data URI format
+    mime_type = None
     if image_data.startswith('data:'):
-        image_data = image_data.split(',', 1)[1]
+        header, image_data = image_data.split(',', 1)
+        mime_type = header.split(':')[1].split(';')[0]
+        print(f"[decode_image] Data URI mime type: {mime_type}")
     
     image_bytes = base64.b64decode(image_data)
-    return Image.open(io.BytesIO(image_bytes))
+    print(f"[decode_image] Decoded {len(image_bytes)} bytes")
+    
+    pil_image = Image.open(io.BytesIO(image_bytes))
+    print(f"[decode_image] PIL loaded: size={pil_image.size}, mode={pil_image.mode}, format={pil_image.format}")
+    
+    return pil_image
 
 
 def encode_image(image: Image.Image, format: str = 'PNG') -> str:
@@ -176,13 +184,21 @@ def edit_image(
     
     mid_timestep = torch.ones((1,), dtype=torch.int64, device="cuda") * 500
     
-    # Process image
-    processed_image = to_tensor(pil_img_cond).unsqueeze(0).to("cuda") * 2 - 1
+    # Process image with detailed logging
+    print(f"[SwiftEdit] Converting PIL to tensor...")
+    tensor_before_unsqueeze = to_tensor(pil_img_cond)
+    print(f"[SwiftEdit] Tensor BEFORE unsqueeze: shape={tensor_before_unsqueeze.shape}, dtype={tensor_before_unsqueeze.dtype}")
+    
+    processed_image = tensor_before_unsqueeze.unsqueeze(0).to("cuda") * 2 - 1
+    print(f"[SwiftEdit] Tensor AFTER unsqueeze: shape={processed_image.shape}, dtype={processed_image.dtype}")
+    print(f"[SwiftEdit] Tensor on device: {processed_image.device}")
     
     # Encode to latent
+    print(f"[SwiftEdit] Encoding to latent space...")
     latents = _inverse_model.vae.encode(
         processed_image.to(_inverse_model.weight_dtype)
     ).latent_dist.sample()
+    print(f"[SwiftEdit] Latents shape: {latents.shape}")
     latents = latents * _inverse_model.vae.config.scaling_factor
     dub_latents = torch.cat([latents] * 2, dim=0)
     
