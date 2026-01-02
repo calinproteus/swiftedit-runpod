@@ -157,18 +157,22 @@ def edit_image(
     from torchvision.utils import save_image
     
     # Image is already processed client-side:
-    # - Composited onto Figma background (RGB, no alpha)
+    # - Composited onto Figma background (no alpha)
     # - Exported at 512x512
     # - Saved as JPEG (quality 95)
-    # Just use it directly!
     print(f"[SwiftEdit] Received image: {pil_image.size[0]}x{pil_image.size[1]}, mode: {pil_image.mode}")
     
-    # Verify size (should be 512x512 from client)
-    if pil_image.size != (512, 512):
-        print(f"[SwiftEdit] WARNING: Image is not 512x512, resizing from {pil_image.size}")
-        pil_img_cond = pil_image.resize((512, 512))
+    # Ensure RGB mode (safety check - JPEG should be RGB but PIL might load differently)
+    if pil_image.mode != 'RGB':
+        print(f"[SwiftEdit] Converting from {pil_image.mode} to RGB")
+        pil_img_cond = pil_image.convert('RGB')
     else:
         pil_img_cond = pil_image
+    
+    # Verify size (should be 512x512 from client)
+    if pil_img_cond.size != (512, 512):
+        print(f"[SwiftEdit] WARNING: Image is not 512x512, resizing from {pil_img_cond.size}")
+        pil_img_cond = pil_img_cond.resize((512, 512))
     
     mid_timestep = torch.ones((1,), dtype=torch.int64, device="cuda") * 500
     
