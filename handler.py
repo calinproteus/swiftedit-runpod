@@ -138,6 +138,8 @@ def edit_image(
     scale_ta: float = 1.0,
     clamp_rate: float = 3.0,
     mask_threshold: float = 0.5,
+    page_background_color: Optional[dict] = None,
+    has_canvas_frame: bool = False,
 ) -> Image.Image:
     """
     Edit image using SwiftEdit.
@@ -148,6 +150,8 @@ def edit_image(
         edit_prompt: Desired edit
         scale_edit: Edit intensity (0-1, default 0.2)
         scale_non_edit: Background preservation (0-1, default 1.0)
+        page_background_color: Figma page background color {r, g, b} 0-1 (optional)
+        has_canvas_frame: Whether canvas has black 40% overlay (optional)
         
     Returns:
         Edited PIL Image
@@ -156,8 +160,29 @@ def edit_image(
     from torchvision.transforms.functional import to_tensor
     from torchvision.utils import save_image
     
-    # Convert to RGB (strip alpha) and resize to 512x512 (model requirement)
-    pil_img_cond = pil_image.convert('RGB').resize((512, 512))
+    # Convert RGBA to RGB by compositing onto Figma's actual background color
+    if pil_image.mode == 'RGBA' and page_background_color:
+        # Calculate effective background color
+        bg_r = int(page_background_color['r'] * 255)
+        bg_g = int(page_background_color['g'] * 255)
+        bg_b = int(page_background_color['b'] * 255)
+        
+        # If has_canvas_frame, layer black at 40% opacity on top of page color
+        if has_canvas_frame:
+            # Blend black (0,0,0) at 40% opacity onto page background
+            bg_r = int(bg_r * 0.6)  # (page * 0.6 + black * 0.4) = page * 0.6
+            bg_g = int(bg_g * 0.6)
+            bg_b = int(bg_b * 0.6)
+        
+        # Create background and composite
+        background = Image.new('RGB', pil_image.size, (bg_r, bg_g, bg_b))
+        pil_img_cond = Image.alpha_composite(background.convert('RGBA'), pil_image).convert('RGB')
+    else:
+        # No alpha or no background info - just convert to RGB
+        pil_img_cond = pil_image.convert('RGB')
+    
+    # Resize to 512x512 (model requirement)
+    pil_img_cond = pil_img_cond.resize((512, 512))
     
     mid_timestep = torch.ones((1,), dtype=torch.int64, device="cuda") * 500
     
@@ -276,7 +301,9 @@ def handler(event):
             scale_edit=scale_edit,
             scale_non_edit=scale_non_edit,
             scale_ta=scale_ta,
-            mask_threshold=mask_threshold
+            mask_threshold=mask_threshold,
+            page_background_color=input_data.get('page_background_color'),
+            has_canvas_frame=input_data.get('has_canvas_frame', False)
         )
         
         inference_time = time.perf_counter() - start_time
