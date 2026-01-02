@@ -156,9 +156,9 @@ def edit_image(
     from torchvision.transforms.functional import to_tensor
     from torchvision.utils import save_image
     
-    # Convert to RGB and resize to 512x512 (model requirement)
-    # Note: Alpha compositing is done client-side before sending
-    pil_img_cond = pil_image.convert('RGB').resize((512, 512))
+    # Resize to 512x512 (model requirement)
+    # Note: Image is already RGB (composited client-side), no conversion needed
+    pil_img_cond = pil_image.resize((512, 512))
     
     mid_timestep = torch.ones((1,), dtype=torch.int64, device="cuda") * 500
     
