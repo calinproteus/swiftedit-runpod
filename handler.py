@@ -217,8 +217,10 @@ def edit_image(
     inverted_noise_1, inverted_noise_2 = predict_inverted_code.chunk(2)
     subed = (inverted_noise_1 - inverted_noise_2).abs_().mean(dim=[0, 1])
     max_v = (subed.mean() * clamp_rate).item()
+    print(f"[SwiftEdit] Mask stats: subed.mean={subed.mean().item():.4f}, max_v={max_v:.4f}")
     mask12 = subed.clamp(0, max_v) / max_v
     mask12 = mask12.detach().cpu().apply_(lambda pix: to_binary(pix, mask_threshold)).to("cuda")
+    print(f"[SwiftEdit] Binary mask: active pixels={(mask12 > 0).sum().item()}/{mask12.numel()} ({(mask12 > 0).sum().item() / mask12.numel() * 100:.1f}%)")
     
     # Edit image
     input_sb = _ip_sb_model.alpha_t * latents + _ip_sb_model.sigma_t * inverted_noise_1
@@ -228,12 +230,15 @@ def edit_image(
         scale_ip_fg=scale_edit, 
         scale_ip_bg=scale_non_edit
     )
+    print(f"[SwiftEdit] MaskController: scale_ta={scale_ta}, scale_ip_fg={scale_edit}, scale_ip_bg={scale_non_edit}")
     _ip_sb_model.set_controller(mask_controller, where=["mid_blocks", "up_blocks"])
+    print(f"[SwiftEdit] Generating with prompts: src='{src_prompt}', edit='{edit_prompt}'")
     res_gen_img, _ = _ip_sb_model.gen_img(
         pil_image=pil_img_cond, 
         prompts=[src_prompt, edit_prompt], 
         noise=input_sb
     )
+    print(f"[SwiftEdit] gen_img completed, result shape: {res_gen_img.shape}")
     
     # Convert tensor to PIL
     # res_gen_img is a tensor, convert to PIL
@@ -243,6 +248,11 @@ def edit_image(
         # Handle both 3D [C, H, W] and 4D [B, C, H, W] tensors
         if res_gen_img.dim() == 4:
             print(f"[SwiftEdit] Tensor is 4D, taking SECOND batch item (edited image)")
+            # Compare the two images to see if they're actually different
+            img0_mean = res_gen_img[0].mean().item()
+            img1_mean = res_gen_img[1].mean().item()
+            diff = (res_gen_img[0] - res_gen_img[1]).abs().mean().item()
+            print(f"[SwiftEdit] Batch comparison: img[0] mean={img0_mean:.4f}, img[1] mean={img1_mean:.4f}, diff={diff:.6f}")
             # gen_img returns [src_result, edit_result], we want the edited one
             res_gen_img = res_gen_img[1]  # Take second batch item (edited image)
         elif res_gen_img.dim() == 3:
