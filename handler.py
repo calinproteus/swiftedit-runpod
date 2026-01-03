@@ -185,6 +185,13 @@ def edit_image(
     mid_timestep = torch.ones((1,), dtype=torch.int64, device="cuda") * 500
     
     # Process image with detailed logging
+    # Get input stats for comparison
+    import numpy as np
+    input_array = np.array(pil_img_cond)
+    input_mean = input_array.mean() / 255.0  # Normalize to 0-1
+    input_std = input_array.std() / 255.0
+    print(f"[SwiftEdit] Input image stats: mean={input_mean:.4f}, std={input_std:.4f}")
+    
     print(f"[SwiftEdit] Converting PIL to tensor...")
     tensor_before_unsqueeze = to_tensor(pil_img_cond)
     print(f"[SwiftEdit] Tensor BEFORE unsqueeze: shape={tensor_before_unsqueeze.shape}, dtype={tensor_before_unsqueeze.dtype}")
@@ -204,9 +211,11 @@ def edit_image(
     
     # Get text embeddings
     input_id = tokenize_captions(_inverse_model.tokenizer, [src_prompt, edit_prompt]).to("cuda")
+    print(f"[SwiftEdit] Tokenized prompts: src_tokens={input_id[0][:10].tolist()}, edit_tokens={input_id[1][:10].tolist()}")
     encoder_hidden_state = _inverse_model.text_encoder(input_id)[0].to(
         dtype=_inverse_model.weight_dtype
     )
+    print(f"[SwiftEdit] Text embeddings: shape={encoder_hidden_state.shape}, src_mean={encoder_hidden_state[0].mean().item():.4f}, edit_mean={encoder_hidden_state[1].mean().item():.4f}")
     
     # Predict inverted noise
     predict_inverted_code = _inverse_model.unet_inverse(
@@ -247,12 +256,20 @@ def edit_image(
         
         # Handle both 3D [C, H, W] and 4D [B, C, H, W] tensors
         if res_gen_img.dim() == 4:
-            print(f"[SwiftEdit] Tensor is 4D, taking SECOND batch item (edited image)")
             # Compare the two images to see if they're actually different
             img0_mean = res_gen_img[0].mean().item()
             img1_mean = res_gen_img[1].mean().item()
+            img0_std = res_gen_img[0].std().item()
+            img1_std = res_gen_img[1].std().item()
             diff = (res_gen_img[0] - res_gen_img[1]).abs().mean().item()
-            print(f"[SwiftEdit] Batch comparison: img[0] mean={img0_mean:.4f}, img[1] mean={img1_mean:.4f}, diff={diff:.6f}")
+            print(f"[SwiftEdit] Batch comparison:")
+            print(f"  img[0]: mean={img0_mean:.4f}, std={img0_std:.4f}")
+            print(f"  img[1]: mean={img1_mean:.4f}, std={img1_std:.4f}")
+            print(f"  diff={diff:.6f}")
+            
+            # EXPERIMENT: Try img[0] if it looks more different from input
+            # Original input latent mean for comparison
+            print(f"[SwiftEdit] Taking SECOND batch item (img[1]) as edited image")
             # gen_img returns [src_result, edit_result], we want the edited one
             res_gen_img = res_gen_img[1]  # Take second batch item (edited image)
         elif res_gen_img.dim() == 3:
