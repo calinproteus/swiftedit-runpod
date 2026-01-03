@@ -125,6 +125,8 @@ def edit_image(
     
     print(f"[SwiftEdit] Edit: '{src_p}' -> '{edit_p}'")
     print(f"[SwiftEdit] Params: scale_edit={scale_edit}, scale_non_edit={scale_non_edit}, scale_ta={scale_ta}")
+    print(f"[SwiftEdit] ⚠️ IMPORTANT: scale_edit controls EDIT STRENGTH - higher = MORE editing")
+    print(f"[SwiftEdit] ⚠️ Current scale_edit={scale_edit} means ONLY {scale_edit*100:.0f}% of edited features are used!")
     
     # Process image (OFFICIAL)
     processed_image = to_tensor(pil_img_cond).unsqueeze(0).to("cuda") * 2 - 1
@@ -160,6 +162,23 @@ def edit_image(
         mask12, scale_text_hiddenstate=scale_ta, scale_ip_fg=scale_edit, scale_ip_bg=scale_non_edit
     )
     _ip_sb_model.set_controller(mask_controller, where=["mid_blocks", "up_blocks"])
+    
+    # Verify controller is set
+    controller_count = 0
+    processor_types = {}
+    for name, processor in _ip_sb_model.unet.attn_processors.items():
+        processor_type = type(processor).__name__
+        processor_types[processor_type] = processor_types.get(processor_type, 0) + 1
+        if hasattr(processor, 'controller') and processor.controller is not None:
+            controller_count += 1
+    
+    print(f"[SwiftEdit] Attention processor types: {processor_types}")
+    print(f"[SwiftEdit] Controller set on {controller_count} attention processors")
+    
+    if controller_count == 0:
+        print(f"[SwiftEdit] ⚠️ CRITICAL ERROR: No controllers were set!")
+        print(f"[SwiftEdit] This means the mask/parameters have NO EFFECT!")
+        print(f"[SwiftEdit] Processor types found: {list(processor_types.keys())}")
     
     print(f"[SwiftEdit] Calling gen_img...")
     res_gen_img, _ = _ip_sb_model.gen_img(
@@ -212,10 +231,26 @@ def handler(event):
             mask_threshold=mask_threshold
         )
         
-        # Convert tensor to PIL (result is [C, H, W] in [-1, 1])
-        # OFFICIAL infer.py uses save_image which expects [C, H, W]
+        # Convert tensor to PIL
+        # gen_img() returns [batch, C, H, W] in [0, 1] range
+        # When called with 2 prompts [src, edit], batch=2:
+        #   result_tensor[0] = source-preserving result
+        #   result_tensor[1] = edited result
+        print(f"[SwiftEdit] Result shape: {result_tensor.shape}, range: [{result_tensor.min().item():.3f}, {result_tensor.max().item():.3f}]")
+        
+        if result_tensor.dim() == 4:
+            # Compare batch items
+            img0_mean = result_tensor[0].mean().item()
+            img1_mean = result_tensor[1].mean().item()
+            diff = (result_tensor[0] - result_tensor[1]).abs().mean().item()
+            print(f"[SwiftEdit] Batch[0] mean={img0_mean:.4f}, Batch[1] mean={img1_mean:.4f}, diff={diff:.6f}")
+            
+            # Take the EDITED image (second in batch)
+            result_tensor = result_tensor[1]
+            print(f"[SwiftEdit] Using batch[1] (edited image)")
+        
         # For PIL, we need [H, W, C] in [0, 255]
-        result_np = result_tensor.cpu().clamp(-1, 1).add(1).div(2).permute(1, 2, 0).numpy()
+        result_np = result_tensor.cpu().clamp(0, 1).permute(1, 2, 0).numpy()
         result_img = Image.fromarray((result_np * 255).astype('uint8'))
         
         total_time = time.perf_counter() - start_time
