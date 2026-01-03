@@ -242,8 +242,9 @@ def edit_image(
         
         # Handle both 3D [C, H, W] and 4D [B, C, H, W] tensors
         if res_gen_img.dim() == 4:
-            print(f"[SwiftEdit] Tensor is 4D, taking first batch item")
-            res_gen_img = res_gen_img[0]  # Take first batch item
+            print(f"[SwiftEdit] Tensor is 4D, taking SECOND batch item (edited image)")
+            # gen_img returns [src_result, edit_result], we want the edited one
+            res_gen_img = res_gen_img[1]  # Take second batch item (edited image)
         elif res_gen_img.dim() == 3:
             print(f"[SwiftEdit] Tensor is already 3D")
         else:
